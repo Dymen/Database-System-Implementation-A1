@@ -6,6 +6,7 @@
 #include "MyDB_PageHandle.h"
 #include "../../Catalog/headers/MyDB_Table.h"
 #include "MyDB_Page.h"
+#include "CheckLRU.h"
 
 using namespace std;
 
@@ -50,13 +51,16 @@ public:
 	~MyDB_BufferManager ();
 
 	// FEEL FREE TO ADD ADDITIONAL PUBLIC METHODS 
-
 private:
 	size_t pageSize, numPages;
 	string tempFile;
 	vector<shared_ptr<MyDB_Page>> buffer;
-	// YOUR STUFF HERE
-    //check whether pageNo_th page
+    shared_ptr<LRULinkedList> head, tail;
+    map<size_t, shared_ptr<LRULinkedList>> page2LRUPtr;
+
+    size_t getLRUPage();
+    void updatePage(size_t);
+    //check whether pageNo_th page stores the corresponding content
     bool checkPage(size_t pageNo, MyDB_TablePtr whichTable, long i);
 };
 

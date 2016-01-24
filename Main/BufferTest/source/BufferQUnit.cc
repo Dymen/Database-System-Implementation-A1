@@ -6,14 +6,14 @@
 #include "MyDB_PageHandle.h"
 #include "MyDB_Table.h"
 #include "QUnit.h"
+#include "../../Qunit/headers/QUnit.h"
 #include <iostream>
 #include <unistd.h>
 #include <vector>
 
 using namespace std;
 
-// these functions write a bunch of characters to a string... used to produce data
-void writeNums (char *bytes, size_t len, int i) {
+void writeNums(char *bytes, size_t len, int i) {
 	for (size_t j = 0; j < len - 1; j++) {
 		bytes[j] = '0' + (i % 10);
 	}

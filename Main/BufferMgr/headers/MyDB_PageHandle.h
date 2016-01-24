@@ -35,6 +35,7 @@ public:
 	~MyDB_PageHandleBase ();
 
 	// FEEL FREE TO ADD ADDITIONAL PUBLIC METHODS
+    MyDB_PageHandleBase (shared_ptr<MyDB_Page> pagePtr);
 
 private:
 	shared_ptr<MyDB_Page> pagePtr;
