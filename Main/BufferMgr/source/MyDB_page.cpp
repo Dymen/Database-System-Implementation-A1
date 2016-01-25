@@ -40,6 +40,7 @@ void MyDB_Page::incRef() {
     unUsed = false;
 }
 
+//Should be called each time page assigned to a new data entry
 void MyDB_Page::readFromDisk() {
     ifstream fin(table->getStorageLoc());
     fin.seekg(tablePos, ios::beg);
@@ -81,6 +82,11 @@ void MyDB_Page::cleanPage(string tempFile) {
     unUsed = true;
     anonymous = false;
     dirty = false;
+    nRef = 0;
+}
+
+bool MyDB_Page::checkPage(MyDB_TablePtr tab, size_t pos) {
+    return ((table->getName().compare(tab->getName())==0)&&(tablePos==pos));
 }
 
 #endif //A1_MYDB_PAGE_H

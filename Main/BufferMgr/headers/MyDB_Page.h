@@ -27,6 +27,7 @@ public:
     void readFromDisk(string tempFile);
     void* readPageContent();
     void cleanPage(string tempFile);
+    bool checkPage(MyDB_TablePtr tab, size_t pos);
 
 private:
     size_t nRef, pageSize;

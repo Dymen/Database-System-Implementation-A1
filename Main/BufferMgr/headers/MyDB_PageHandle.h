@@ -4,6 +4,7 @@
 
 #include <memory>
 #include "MyDB_Page.h"
+#include "MyDB_BufferManager.h"
 
 // page handles are basically smart pointers
 using namespace std;
@@ -35,10 +36,14 @@ public:
 	~MyDB_PageHandleBase ();
 
 	// FEEL FREE TO ADD ADDITIONAL PUBLIC METHODS
-    MyDB_PageHandleBase (shared_ptr<MyDB_Page> pagePtr);
+    MyDB_PageHandleBase (shared_ptr<MyDB_Page> pagePtr, shared_ptr<MyDB_BufferManager> bufManager);
 
 private:
 	shared_ptr<MyDB_Page> pagePtr;
+    shared_ptr<MyDB_BufferManager> bufManager;
+    shared_ptr<MyDB_Table> table;
+    size_t tablePos;
+    bool anonymous;
 	// YOUR CODE HERE
 };
 

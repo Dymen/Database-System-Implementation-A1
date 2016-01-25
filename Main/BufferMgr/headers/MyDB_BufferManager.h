@@ -39,6 +39,10 @@ public:
 	// un-pins the specified page
 	void unpin (MyDB_PageHandle unpinMe);
 
+    shared_ptr<MyDB_Page> getPagePtr(MyDB_TablePtr whichTable, long i);
+
+    shared_ptr<MyDB_Page> getPagePtr();
+
 	// creates an LRU buffer manager... params are as follows:
 	// 1) the size of each page is pageSize 
 	// 2) the number of pages managed by the buffer manager is numPages;
@@ -58,6 +62,7 @@ private:
     shared_ptr<LRULinkedList> head, tail;
     map<size_t, shared_ptr<LRULinkedList>> page2LRUPtr;
 
+    //Let LRU return a page number for storing new content
     size_t getLRUPage();
     void updatePage(size_t);
     //check whether pageNo_th page stores the corresponding content

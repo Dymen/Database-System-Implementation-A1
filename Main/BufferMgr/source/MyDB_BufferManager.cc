@@ -6,6 +6,7 @@
 #include "../../Catalog/headers/MyDB_Table.h"
 #include "../headers/MyDB_BufferManager.h"
 #include <string>
+#include <stdlib.h>
 
 using namespace std;
 
@@ -26,6 +27,14 @@ MyDB_PageHandle MyDB_BufferManager :: getPinnedPage () {
 }
 
 void MyDB_BufferManager :: unpin (MyDB_PageHandle unpinMe) {
+}
+
+shared_ptr<MyDB_Page> MyDB_BufferManager::getPagePtr(MyDB_TablePtr whichTable, long i) {
+    return nullptr;
+}
+
+shared_ptr<MyDB_Page> MyDB_BufferManager::getPagePtr() {
+    return nullptr;
 }
 
 size_t MyDB_BufferManager::getLRUPage() {
@@ -50,10 +59,10 @@ void MyDB_BufferManager::updatePage(size_t pageNo) {
         head = page2LRUPtr[pageNo]->succ;
 	if (page2LRUPtr[pageNo] != tail)
 		page2LRUPtr[pageNo]->succ->prev = page2LRUPtr[pageNo]->prev;
+    else
+        tail = page2LRUPtr[pageNo]->prev;
 	//If the page is not empty ,move pageNo to the tail
     if (! buffer[pageNo]->unUsed) {
-        if (tail->pageNo == pageNo)
-            return;
         tail->succ = page2LRUPtr[pageNo];
         page2LRUPtr[pageNo]->prev = tail;
         page2LRUPtr[pageNo]->succ = nullptr;
@@ -61,8 +70,6 @@ void MyDB_BufferManager::updatePage(size_t pageNo) {
     }
     else{
         //If not, move page to the head
-        if (head->pageNo == pageNo)
-            return;
         head->prev = page2LRUPtr[pageNo];
         page2LRUPtr[pageNo]->prev = nullptr;
         page2LRUPtr[pageNo]->succ = head;
@@ -86,6 +93,17 @@ MyDB_BufferManager :: MyDB_BufferManager (size_t pageSize, size_t numPages, stri
 	page2LRUPtr[numPages-1]->succ = nullptr;
 	head = page2LRUPtr[0];
 	tail = page2LRUPtr[numPages-1];
+
+    //Initialize buffer
+    char* bufferStart = (char*)malloc(pageSize * numPages);
+    for (i = 0; i < numPages; i ++){
+        buffer.push_back(make_shared(new MyDB_Page(i, pageSize, bufferStart+i*pageSize)));
+    }
+
+    //Initialize other parameters
+    this->tempFile = tempFile;
+    this->pageSize = pageSize;
+    this->numPages = numPages;
 }
 
 MyDB_BufferManager :: ~MyDB_BufferManager () {
