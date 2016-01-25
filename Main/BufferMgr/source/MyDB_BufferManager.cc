@@ -29,10 +29,12 @@ MyDB_PageHandle MyDB_BufferManager :: getPinnedPage () {
 void MyDB_BufferManager :: unpin (MyDB_PageHandle unpinMe) {
 }
 
+//Return a page pointer(already loaded the corresponding content)
 shared_ptr<MyDB_Page> MyDB_BufferManager::getPagePtr(MyDB_TablePtr whichTable, long i) {
     return nullptr;
 }
 
+//Return a page pointer for anonymous page
 shared_ptr<MyDB_Page> MyDB_BufferManager::getPagePtr() {
     return nullptr;
 }
