@@ -10,6 +10,23 @@
 
 using namespace std;
 
+typedef struct MyDB_TableInfo{
+public:
+    MyDB_TableInfo(string tableName, long i):tableName(tableName), tablePos(i){};
+    string tableName;
+    long tablePos;
+}MyDB_TableInfo;
+
+struct MyDB_TableInfoComparator{
+    bool operator()(const MyDB_TableInfo &info1, const MyDB_TableInfo &info2)const{
+        if (info1.tableName.compare(info2.tableName) != 0)
+            return info1.tableName.compare(info2.tableName) > 0 ? 1 : -1;
+        if (info1.tablePos != info2.tablePos)
+            return info1.tablePos > info2.tablePos > 0 ? 1 : -1;
+        return 0;
+    }
+};
+
 class MyDB_BufferManager {
 
 public:
@@ -39,9 +56,15 @@ public:
 	// un-pins the specified page
 	void unpin (MyDB_PageHandle unpinMe);
 
-    shared_ptr<MyDB_Page> getPagePtr(MyDB_TablePtr whichTable, long i);
+    void decRefMap(string tableName, long pos);
+
+    shared_ptr<MyDB_Page> getPagePtr(MyDB_TablePtr table, long pos);
 
     shared_ptr<MyDB_Page> getPagePtr();
+
+    size_t checkRefMap(string tableName, long pos);
+
+    void cleanRefMap(string tableName, long pos);
 
 	// creates an LRU buffer manager... params are as follows:
 	// 1) the size of each page is pageSize 
@@ -61,6 +84,7 @@ private:
 	vector<shared_ptr<MyDB_Page>> buffer;
     shared_ptr<LRULinkedList> head, tail;
     map<size_t, shared_ptr<LRULinkedList>> page2LRUPtr;
+    map<MyDB_TableInfo, size_t, MyDB_TableInfoComparator> pageRefMap;
 
     //Let LRU return a page number for storing new content
     size_t getLRUPage();

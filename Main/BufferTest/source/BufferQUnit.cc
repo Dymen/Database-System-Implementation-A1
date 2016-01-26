@@ -2,11 +2,8 @@
 #ifndef CATALOG_UNIT_H
 #define CATALOG_UNIT_H
 
-#include "MyDB_BufferManager.h"
-#include "MyDB_PageHandle.h"
-#include "MyDB_Table.h"
-#include "QUnit.h"
 #include "../../Qunit/headers/QUnit.h"
+#include "../../BufferMgr/headers/MyDB_BufferManager.h"
 #include <iostream>
 #include <unistd.h>
 #include <vector>

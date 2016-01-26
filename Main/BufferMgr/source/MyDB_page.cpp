@@ -43,20 +43,20 @@ void MyDB_Page::incRef() {
 //Should be called each time page assigned to a new data entry
 void MyDB_Page::readFromDisk() {
     ifstream fin(table->getStorageLoc());
-    fin.seekg(tablePos, ios::beg);
+    fin.seekg(tablePos*pageSize, ios::beg);
     fin.read(pageAdd, pageSize);
 }
 
 void MyDB_Page::writeToDisk() {
     ofstream fout(table->getStorageLoc());
-    fout.seekp(tablePos, ios::beg);
+    fout.seekp(tablePos*pageSize, ios::beg);
     fout.write(pageAdd, pageSize);
 }
 
 //Read anonymous page
 void MyDB_Page::readFromDisk(string tempFile) {
     ifstream fin(tempFile);
-    fin.seekg(tablePos, ios::beg);
+    fin.seekg(tablePos*pageSize, ios::beg);
     fin.read(pageAdd, pageSize);
 }
 
@@ -85,8 +85,23 @@ void MyDB_Page::cleanPage(string tempFile) {
     nRef = 0;
 }
 
+void MyDB_Page::reloadData(MyDB_TablePtr tab, size_t pos){
+    table = tab;
+    tablePos = pos;
+    pinned = false;
+    unUsed = false;
+    anonymous = false;
+    readFromDisk();
+}
+
+void MyDB_Page::reloadData(){
+    pinned = false;
+    unUsed = false;
+    anonymous = true;
+}
+
 bool MyDB_Page::checkPage(MyDB_TablePtr tab, size_t pos) {
-    return ((table->getName().compare(tab->getName())==0)&&(tablePos==pos));
+    return ((!unUsed)&&(!anonymous)&&(table->getName().compare(tab->getName())==0)&&(tablePos==pos));
 }
 
 #endif //A1_MYDB_PAGE_H
