@@ -34,17 +34,20 @@ void writeSymbols (char *bytes, size_t len, int i) {
 int main () {
 
 	QUnit::UnitTest qunit(cerr, QUnit::verbose);
-
+	//string path = "/Users/danye/Documents/Courses/COMP530/assignment1/";
+	string path = "/storage-home/d/dy13/comp530/";
 	// UNIT TEST 1: A BIG ONE!!
 	{
 
 		// create a buffer manager 
-		MyDB_BufferManager myMgr (64, 16, "tempDSFSD");
-		MyDB_TablePtr table1 = make_shared <MyDB_Table> ("tempTable", "foobar");
+		//MyDB_BufferManager myMgr (64, 16, "tempDSFSD");
+		MyDB_BufferManager myMgr (64, 16, path+"A1/temp");
+		MyDB_TablePtr table1 = make_shared <MyDB_Table> ("table1", path+"A1/table1");
 
 		// allocate a pinned page
 		cout << "allocating pinned page\n";
 		MyDB_PageHandle pinnedPage = myMgr.getPinnedPage (table1, 0);
+		//MyDB_PageHandle pinnedPage = myMgr.getPage ();
 		char *bytes = (char *) pinnedPage->getBytes ();
 		writeNums (bytes, 64, 0);
 		pinnedPage->wroteBytes ();
@@ -55,6 +58,7 @@ int main () {
 		for (int i = 1; i < 10; i++) {
 			cout << "allocating pinned page\n";
 			MyDB_PageHandle temp = myMgr.getPinnedPage (table1, i);
+			//MyDB_PageHandle temp = myMgr.getPage ();
 			char *bytes = (char *) temp->getBytes ();
 			writeNums (bytes, 64, i);
 			temp->wroteBytes ();
@@ -114,7 +118,7 @@ int main () {
 		}
 
 		// make a second table
-		MyDB_TablePtr table2 = make_shared <MyDB_Table> ("tempTable2", "barfoo");
+		MyDB_TablePtr table2 = make_shared <MyDB_Table> ("table2", path+"A1/table2");
 		for (int i = 0; i < 100; i++) {
 			cout << "allocating unpinned page\n";
 			MyDB_PageHandle temp = myMgr.getPage (table2, i);
@@ -127,8 +131,8 @@ int main () {
 
 	// UNIT TEST 2
 	{
-		MyDB_BufferManager myMgr (64, 16, "tempDSFSD");
-		MyDB_TablePtr table1 = make_shared <MyDB_Table> ("tempTable", "foobar");
+		MyDB_BufferManager myMgr (64, 16, path+"A1/temp");
+		MyDB_TablePtr table1 = make_shared <MyDB_Table> ("table1", path+"A1/table1");
 
 		// look up all of the pages, and make sure they have the correct numbers
 		for (int i = 0; i < 100; i++) {
@@ -142,6 +146,7 @@ int main () {
 			QUNIT_IS_EQUAL (string (answer), string (bytes));
 		}
 	}
+
 }
 
 #endif

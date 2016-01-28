@@ -7,36 +7,33 @@
 #include "../headers/MyDB_BufferManager.h"
 
 void *MyDB_PageHandleBase :: getBytes () {
-    if (pagePtr->checkPage(table, tablePos))
-        //The current pagePtr still store the corresponding content
-	    return pagePtr->readPageContent();
-    else{
+    if (! pagePtr->checkPage(table, tablePos))
         reloadPage();
-        return pagePtr->readPageContent();
-    }
+    bufManager->updateLRUPage(pagePtr->pageNo);
+    return pagePtr->readPageContent();
 }
 
 void MyDB_PageHandleBase :: wroteBytes () {
     pagePtr->dirty = true;
+    bufManager->updateLRUPage(pagePtr->pageNo);
 }
 
 void MyDB_PageHandleBase :: pin() {
     if (! pagePtr->checkPage(table, tablePos))
         reloadPage();
+    bufManager->updateLRUPage(pagePtr->pageNo);
     pagePtr->pinned = true;
 }
 
 void MyDB_PageHandleBase :: unpin() {
     if (! pagePtr->checkPage(table, tablePos))
         reloadPage();
+    bufManager->updateLRUPage(pagePtr->pageNo);
     pagePtr->pinned = false;
 }
 
 void MyDB_PageHandleBase ::reloadPage() {
-    if (anonymous)
-        pagePtr = bufManager->getPagePtr();
-    else
-        pagePtr = bufManager->getPagePtr(table, tablePos);
+    pagePtr = bufManager->getPagePtr(table, tablePos, anonymous);
 }
 
 MyDB_PageHandleBase :: ~MyDB_PageHandleBase () {
@@ -49,6 +46,10 @@ MyDB_PageHandleBase :: ~MyDB_PageHandleBase () {
         }
         else bufManager->decRefMap(table->getName(), tablePos);
     }
+    if (pagePtr->anonymous){
+        //release disk space
+        bufManager->setTempFilePos(tablePos, false);
+    }
 
 }
 
@@ -59,6 +60,7 @@ MyDB_PageHandleBase :: MyDB_PageHandleBase(shared_ptr<MyDB_Page> pagePtr, MyDB_B
     this->tablePos = pagePtr->tablePos;
     this->anonymous = pagePtr->anonymous;
 	pagePtr->incRef();
+    bufManager->updateLRUPage(pagePtr->pageNo);
 }
 
 #endif
