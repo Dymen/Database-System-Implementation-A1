@@ -8,7 +8,8 @@
 // page handles are basically smart pointers
 using namespace std;
 class MyDB_PageHandleBase;
-typedef shared_ptr <MyDB_PageHandleBase> MyDB_PageHandle;
+class MyDB_BufferManager;
+typedef shared_ptr<MyDB_PageHandleBase> MyDB_PageHandle;
 
 class MyDB_PageHandleBase {
 
@@ -27,6 +28,10 @@ public:
 	// will never be written to disk. 
 	void wroteBytes ();
 
+    void unpin();
+
+    void pin();
+
 	// There are no more references to the handle when this is called...
 	// this should decrement a reference count to the number of handles
 	// to the particular page that it references.  If the number of 
@@ -35,10 +40,16 @@ public:
 	~MyDB_PageHandleBase ();
 
 	// FEEL FREE TO ADD ADDITIONAL PUBLIC METHODS
+    MyDB_PageHandleBase (shared_ptr<MyDB_Page> pagePtr, MyDB_BufferManager *bufManager);
 
 private:
 	shared_ptr<MyDB_Page> pagePtr;
-	// YOUR CODE HERE
+    MyDB_BufferManager *bufManager;
+    shared_ptr<MyDB_Table> table;
+    size_t tablePos;
+    bool anonymous;
+
+    void reloadPage();
 };
 
 #endif

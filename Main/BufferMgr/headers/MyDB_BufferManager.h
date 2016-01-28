@@ -6,8 +6,28 @@
 #include "MyDB_PageHandle.h"
 #include "../../Catalog/headers/MyDB_Table.h"
 #include "MyDB_Page.h"
+#include "CheckLRU.h"
 
 using namespace std;
+class MyDB_TableInfo{
+public:
+    MyDB_TableInfo(string tableName, long i):tableName(tableName), tablePos(i){};
+    string tableName;
+    long tablePos;
+	~MyDB_TableInfo(){
+		//cout << "Deconstruct " << tableName << " " << tablePos << endl;
+	};
+};
+
+struct MyDB_TableInfoComparator{
+    bool operator()(const shared_ptr<MyDB_TableInfo> &info1, const shared_ptr<MyDB_TableInfo> &info2)const{
+        if (info1->tableName.compare(info2->tableName) != 0)
+            return info1->tableName.compare(info2->tableName) > 0 ? 1 : -1;
+        if (info1->tablePos != info2->tablePos)
+            return info1->tablePos > info2->tablePos > 0 ? 1 : -1;
+        return 0;
+    }
+};
 
 class MyDB_BufferManager {
 
@@ -38,6 +58,28 @@ public:
 	// un-pins the specified page
 	void unpin (MyDB_PageHandle unpinMe);
 
+    void decRefMap(string tableName, long pos);
+
+    shared_ptr<MyDB_Page> getPagePtr(MyDB_TablePtr table, long pos, bool anonymous);
+
+    shared_ptr<MyDB_Page> getPagePtr();
+
+    size_t checkRefMap(string tableName, long pos);
+
+    void cleanRefMap(string tableName, long pos);
+
+    size_t findTempFilePos();
+
+    void setTempFilePos(size_t pos, bool flag){
+        tempPagePosMap[pos] = flag;
+    }
+
+    string getTempFileName(){
+        return tempFile;
+    };
+
+    void updateLRUPage(size_t);
+
 	// creates an LRU buffer manager... params are as follows:
 	// 1) the size of each page is pageSize 
 	// 2) the number of pages managed by the buffer manager is numPages;
@@ -49,14 +91,23 @@ public:
 	// and any temporary files need to be deleted
 	~MyDB_BufferManager ();
 
-	// FEEL FREE TO ADD ADDITIONAL PUBLIC METHODS 
-
+	// FEEL FREE TO ADD ADDITIONAL PUBLIC METHODS
+	shared_ptr<MyDB_Table> tempTable;
 private:
+	typedef map<size_t, shared_ptr<LRULinkedList>> Page2LRUPtrMap;
+	typedef map <shared_ptr<MyDB_TableInfo>, size_t, MyDB_TableInfoComparator> PageRefMap;
+	char* bufferStart;
 	size_t pageSize, numPages;
 	string tempFile;
 	vector<shared_ptr<MyDB_Page>> buffer;
-	// YOUR STUFF HERE
-    //check whether pageNo_th page
+    shared_ptr<LRULinkedList> head, tail;
+    map<size_t, shared_ptr<LRULinkedList>> page2LRUPtr;
+    map<shared_ptr<MyDB_TableInfo>, size_t, MyDB_TableInfoComparator> pageRefMap;
+    map<size_t, bool> tempPagePosMap;
+
+    //Let LRU return a page number for storing new content
+    size_t getLRUPage();
+    //check whether pageNo_th page stores the corresponding content
     bool checkPage(size_t pageNo, MyDB_TablePtr whichTable, long i);
 };
 
