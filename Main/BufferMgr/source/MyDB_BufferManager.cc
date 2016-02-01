@@ -11,17 +11,17 @@
 using namespace std;
 
 MyDB_PageHandle MyDB_BufferManager :: getPage (MyDB_TablePtr table, long pos) {
-    MyDB_PageHandle newHandle;
-    newHandle = make_shared<MyDB_PageHandleBase>(getPagePtr(table, pos, false), this);
+    MyDB_PageHandleBase *newHandleBase = new MyDB_PageHandleBase(this, table, pos, false);
+    MyDB_PageHandle newHandle(newHandleBase);
     return newHandle;
 }
 
+//Return a handle which points to an anonymous page, but before read/write op the handle won't be allocated a real page in buffer
 MyDB_PageHandle MyDB_BufferManager :: getPage () {
+    //First assign an address in disk for use
     int pos = findTempFilePos();
-    shared_ptr<MyDB_Page> pagePtr = getPagePtr();
     setTempFilePos(pos, true);
-    pagePtr->anonymous = true;
-    MyDB_PageHandleBase *newHandleBase = new MyDB_PageHandleBase(pagePtr, this);
+    MyDB_PageHandleBase *newHandleBase = new MyDB_PageHandleBase(this, tempTable, pos, true);
     MyDB_PageHandle newHandle(newHandleBase);
     return newHandle;
 }
@@ -31,20 +31,16 @@ MyDB_PageHandle MyDB_BufferManager :: getPinnedPage (MyDB_TablePtr table, long p
     pagePtr->pinned = true;
     MyDB_PageHandleBase *newHandleBase = new MyDB_PageHandleBase(pagePtr, this);
     MyDB_PageHandle newHandle(newHandleBase);
-
     return newHandle;
 }
 
-
+//Will allcate a page from buffer directly(always a new page for this function)
 MyDB_PageHandle MyDB_BufferManager :: getPinnedPage () {
-    int pos = findTempFilePos();
     shared_ptr<MyDB_Page> pagePtr = getPagePtr();
-    setTempFilePos(pos, true);
     pagePtr->pinned = true;
     pagePtr->anonymous = true;
     MyDB_PageHandleBase *newHandleBase = new MyDB_PageHandleBase(pagePtr, this);
     MyDB_PageHandle newHandle(newHandleBase);
-
     return newHandle;
 }
 
@@ -52,6 +48,17 @@ void MyDB_BufferManager :: unpin (MyDB_PageHandle unpinMe) {
     unpinMe->unpin();
 }
 
+//Check whether the page is already in the buffer pool
+shared_ptr<MyDB_Page> MyDB_BufferManager::findPageInBuffer(MyDB_TablePtr table, long pos){
+    int i;
+    for (i = 0; i < numPages; i ++) {
+        if (buffer[i]->checkPage(table, pos)) {
+            //cout << table->getName() << " " << pos << " in page " << i << endl;
+            return buffer[i];
+        }
+    }
+    return nullptr;
+}
 
 void MyDB_BufferManager::decRefMap(string tableName, long pos) {
     MyDB_TableInfo *tableInfo = new MyDB_TableInfo(tableName, pos);
@@ -61,14 +68,32 @@ void MyDB_BufferManager::decRefMap(string tableName, long pos) {
         pageRefMap[tableInfoPtr] = -1;
 }
 
-size_t MyDB_BufferManager::checkRefMap(string tableName, long pos){
+void MyDB_BufferManager::incRefMap(string tableName, long pos) {
     MyDB_TableInfo *tableInfo = new MyDB_TableInfo(tableName, pos);
     shared_ptr<MyDB_TableInfo> tableInfoPtr(tableInfo);
-    if (pageRefMap.find(tableInfoPtr) == pageRefMap.end())
+    map<shared_ptr<MyDB_TableInfo>, int>::iterator iter = pageRefMap.find(tableInfoPtr);
+    if (iter == pageRefMap.end())
+        pageRefMap.insert(make_pair(tableInfoPtr, 1));
+    else {
+        if (pageRefMap[tableInfoPtr] >= 0)
+            pageRefMap[tableInfoPtr] ++;
+        else
+            pageRefMap[tableInfoPtr] = 1;
+    }
+}
+
+//Check whether the corresponding page is saved in disk and return the number of references
+int MyDB_BufferManager::checkRefMap(string tableName, long pos){
+    MyDB_TableInfo *tableInfo = new MyDB_TableInfo(tableName, pos);
+    shared_ptr<MyDB_TableInfo> tableInfoPtr(tableInfo);
+    map<shared_ptr<MyDB_TableInfo>, int>::iterator iter = pageRefMap.find(tableInfoPtr);
+    if (iter == pageRefMap.end())
         return -1;
     return pageRefMap[tableInfoPtr];
 }
 
+//Mark that there is no handle pointing to the page
+//By default, when calling this function there exists a key of tableName
 void MyDB_BufferManager::cleanRefMap(string tableName, long pos) {
     MyDB_TableInfo *tableInfo = new MyDB_TableInfo(tableName, pos);
     shared_ptr<MyDB_TableInfo> tableInfoPtr(tableInfo);
@@ -82,8 +107,10 @@ shared_ptr<MyDB_Page> MyDB_BufferManager::getPagePtr(MyDB_TablePtr table, long p
     for (i = 0; i < numPages; i ++) {
         if (buffer[i]->unUsed)
             continue;
-        if (buffer[i]->checkPage(table, pos))
+        if (buffer[i]->checkPage(table, pos)) {
+            //cout << table->getName() << " " << pos << " in page " << i << endl;
             return buffer[i];
+        }
     }
     newPage = getLRUPage();
     buffer[newPage]->reloadData(table, pos);
@@ -100,14 +127,14 @@ shared_ptr<MyDB_Page> MyDB_BufferManager::getPagePtr(MyDB_TablePtr table, long p
     return buffer[newPage];
 }
 
-//Return a page pointer for anonymous page
+//Return a page pointer from buffer pool for anonymous page
 shared_ptr<MyDB_Page> MyDB_BufferManager::getPagePtr() {
     int newPage;
 
     newPage = getLRUPage();
-    buffer[newPage]->reloadData();
     buffer[newPage]->nRef = 0;
     buffer[newPage]->unUsed = false;
+    buffer[newPage]->pinned = false;
     buffer[newPage]->anonymous = true;
     buffer[newPage]->dirty = false;
     buffer[newPage]->table = tempTable;
@@ -116,7 +143,7 @@ shared_ptr<MyDB_Page> MyDB_BufferManager::getPagePtr() {
     return buffer[newPage];
 }
 
-size_t MyDB_BufferManager::getLRUPage() {
+int MyDB_BufferManager::getLRUPage() {
     shared_ptr<LRULinkedList> curNode = head;
 
     while (buffer[curNode->pageNo]->pinned){
@@ -125,20 +152,28 @@ size_t MyDB_BufferManager::getLRUPage() {
             throw new exception();
     }
     if (! buffer[curNode->pageNo]->unUsed) {
+        //cout << "evict page " << curNode->pageNo << endl;
         //Save the number of references to a map in the manager, and then clean the page for later use
         MyDB_TableInfo *tableInfo = new MyDB_TableInfo(buffer[curNode->pageNo]->table->getName(), buffer[curNode->pageNo]->tablePos);
         shared_ptr<MyDB_TableInfo> tableInfoPtr(tableInfo);
-        if (pageRefMap.find(tableInfoPtr) != pageRefMap.end())
-            pageRefMap[tableInfoPtr] = buffer[curNode->pageNo]->nRef;
-        else
-            pageRefMap.insert(make_pair(tableInfoPtr, buffer[curNode->pageNo]->nRef));
+        if (buffer[curNode->pageNo]->nRef > 0) {
+            map<shared_ptr<MyDB_TableInfo>, int>::iterator iter = pageRefMap.find(tableInfoPtr);
+            if (iter != pageRefMap.end())
+                pageRefMap[tableInfoPtr] = buffer[curNode->pageNo]->nRef;
+            else
+                pageRefMap.insert(make_pair(tableInfoPtr, buffer[curNode->pageNo]->nRef));
+        }
         buffer[curNode->pageNo]->cleanPage(tempFile);
     }
+    /*
+    else
+        cout << "allocate page " << curNode->pageNo << endl;
+    */
 	return curNode->pageNo;
 }
 
 //Move page to the tail of LRU list
-void MyDB_BufferManager::updateLRUPage(size_t pageNo) {
+void MyDB_BufferManager::updateLRUPage(int pageNo) {
 	if (page2LRUPtr[pageNo] != head)
 		page2LRUPtr[pageNo]->prev->succ = page2LRUPtr[pageNo]->succ;
     else
@@ -163,7 +198,7 @@ void MyDB_BufferManager::updateLRUPage(size_t pageNo) {
     }
 }
 
-size_t MyDB_BufferManager::findTempFilePos(){
+int MyDB_BufferManager::findTempFilePos(){
     int i = 0;
 
     while (true){
@@ -175,7 +210,7 @@ size_t MyDB_BufferManager::findTempFilePos(){
     }
 }
 
-MyDB_BufferManager :: MyDB_BufferManager (size_t pageSize, size_t numPages, string tempFile) {
+MyDB_BufferManager :: MyDB_BufferManager (int pageSize, int numPages, string tempFile) {
 	int i;
 
     MyDB_Table *temp = new MyDB_Table(tempFile, tempFile);

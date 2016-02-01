@@ -12,27 +12,24 @@ using namespace std;
 
 class MyDB_Page{
 public:
-    MyDB_Page(int pageNo, size_t pageSize, char* pageAdd);
+    MyDB_Page(int pageNo, int pageSize, char* pageAdd);
     ~MyDB_Page();
-    size_t pageNo, nRef;
+    int pageNo, nRef;
     bool pinned, unUsed, anonymous, dirty;
     MyDB_TablePtr table;
-    size_t tablePos; //tablePos_th page in the table
+    int tablePos; //tablePos_th page in the table
 
     void decRef();
     void incRef();
     void writeToDisk();
-    void writeToDisk(string tempFile);
     void readFromDisk();
-    void readFromDisk(string tempFile);
     void* readPageContent();
     void cleanPage(string tempFile);
-    void reloadData(MyDB_TablePtr tab, size_t pos);
-    void reloadData();
-    bool checkPage(MyDB_TablePtr tab, size_t pos);
+    void reloadData(MyDB_TablePtr tab, int pos);
+    bool checkPage(MyDB_TablePtr tab, int pos);
 
 private:
-    size_t pageSize;
+    int pageSize;
     char* pageAdd;
 };
 #endif //A1_MYDB_PAGE_H

@@ -20,12 +20,12 @@ public:
 };
 
 struct MyDB_TableInfoComparator{
-    bool operator()(const shared_ptr<MyDB_TableInfo> &info1, const shared_ptr<MyDB_TableInfo> &info2)const{
+    bool operator()(shared_ptr<MyDB_TableInfo> info1, shared_ptr<MyDB_TableInfo> info2)const{
         if (info1->tableName.compare(info2->tableName) != 0)
-            return info1->tableName.compare(info2->tableName) > 0 ? 1 : -1;
+            return info1->tableName.compare(info2->tableName) > 0 ? false : true;
         if (info1->tablePos != info2->tablePos)
-            return info1->tablePos > info2->tablePos > 0 ? 1 : -1;
-        return 0;
+            return info1->tablePos > info2->tablePos > 0 ? false : true;
+        return false;
     }
 };
 
@@ -60,17 +60,21 @@ public:
 
     void decRefMap(string tableName, long pos);
 
+	void incRefMap(string tableName, long pos);
+
+	shared_ptr<MyDB_Page> findPageInBuffer(MyDB_TablePtr table, long pos);
+
     shared_ptr<MyDB_Page> getPagePtr(MyDB_TablePtr table, long pos, bool anonymous);
 
     shared_ptr<MyDB_Page> getPagePtr();
 
-    size_t checkRefMap(string tableName, long pos);
+    int checkRefMap(string tableName, long pos);
 
     void cleanRefMap(string tableName, long pos);
 
-    size_t findTempFilePos();
+    int findTempFilePos();
 
-    void setTempFilePos(size_t pos, bool flag){
+    void setTempFilePos(int pos, bool flag){
         tempPagePosMap[pos] = flag;
     }
 
@@ -78,13 +82,13 @@ public:
         return tempFile;
     };
 
-    void updateLRUPage(size_t);
+    void updateLRUPage(int);
 
 	// creates an LRU buffer manager... params are as follows:
 	// 1) the size of each page is pageSize 
 	// 2) the number of pages managed by the buffer manager is numPages;
 	// 3) temporary pages are written to the file tempFile
-	MyDB_BufferManager (size_t pageSize, size_t numPages, string tempFile);
+	MyDB_BufferManager (int pageSize, int numPages, string tempFile);
 	
 	// when the buffer manager is destroyed, all of the dirty pages need to be
 	// written back to disk, any necessary data needs to be written to the catalog,
@@ -94,21 +98,21 @@ public:
 	// FEEL FREE TO ADD ADDITIONAL PUBLIC METHODS
 	shared_ptr<MyDB_Table> tempTable;
 private:
-	typedef map<size_t, shared_ptr<LRULinkedList>> Page2LRUPtrMap;
-	typedef map <shared_ptr<MyDB_TableInfo>, size_t, MyDB_TableInfoComparator> PageRefMap;
+	typedef map<int, shared_ptr<LRULinkedList>> Page2LRUPtrMap;
+	typedef map <shared_ptr<MyDB_TableInfo>, int, MyDB_TableInfoComparator> PageRefMap;
 	char* bufferStart;
-	size_t pageSize, numPages;
+	int pageSize, numPages;
 	string tempFile;
 	vector<shared_ptr<MyDB_Page>> buffer;
     shared_ptr<LRULinkedList> head, tail;
-    map<size_t, shared_ptr<LRULinkedList>> page2LRUPtr;
-    map<shared_ptr<MyDB_TableInfo>, size_t, MyDB_TableInfoComparator> pageRefMap;
-    map<size_t, bool> tempPagePosMap;
+    map<int, shared_ptr<LRULinkedList>> page2LRUPtr;
+    map<shared_ptr<MyDB_TableInfo>, int, MyDB_TableInfoComparator> pageRefMap;
+    map<int, bool> tempPagePosMap;
 
     //Let LRU return a page number for storing new content
-    size_t getLRUPage();
+    int getLRUPage();
     //check whether pageNo_th page stores the corresponding content
-    bool checkPage(size_t pageNo, MyDB_TablePtr whichTable, long i);
+    bool checkPage(int pageNo, MyDB_TablePtr whichTable, long i);
 };
 
 #endif

@@ -41,6 +41,7 @@ public:
 
 	// FEEL FREE TO ADD ADDITIONAL PUBLIC METHODS
     MyDB_PageHandleBase (shared_ptr<MyDB_Page> pagePtr, MyDB_BufferManager *bufManager);
+	MyDB_PageHandleBase(MyDB_BufferManager *bufManager, MyDB_TablePtr table , int tablePos, bool anonymous);
 
 private:
 	shared_ptr<MyDB_Page> pagePtr;

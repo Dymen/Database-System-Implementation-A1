@@ -1,0 +1,13 @@
+Group member:
+Dan Ye
+Peng Du
+
+Some clarifications of our method:
+
+1. To run the Unit Test provided in the submission, please modify the ¡®path¡¯ variable in the BufferQunit.cc line 37.
+
+2. When a handle is generated intially, it's assigned a nullptr. Only when it calls readByte() or writeByte will it be assigned real page in the buffer pool.
+
+3. When the whole buffer pool is occupied by pinned pages, any other allocation of a new page in the buffer pool will be reported as an exception.
+
+4. For the strategy of the LRU, when a pinned page is unpinned, it will become the first to be evicted in the future.

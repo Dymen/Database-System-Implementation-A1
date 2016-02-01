@@ -7,6 +7,7 @@
 
 #include <string>
 #include <fstream>
+#include <iostream>
 #include <sys/fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -15,7 +16,7 @@
 
 using namespace std;
 
-MyDB_Page::MyDB_Page(int pageNo, size_t pageSize, char* pageAdd){
+MyDB_Page::MyDB_Page(int pageNo, int pageSize, char* pageAdd){
     unUsed = true;
     pinned = false;
     anonymous = false;
@@ -32,7 +33,11 @@ MyDB_Page::~MyDB_Page(){
 void MyDB_Page::decRef(){
     nRef --;
     if (nRef == 0){
-        pinned = false;
+        /*
+        if (pinned)
+            cout << "unpin " << table->getName() << " " << tablePos << endl;
+        */
+         pinned = false;
         if (anonymous)
             unUsed = true;
     }
@@ -60,34 +65,13 @@ void MyDB_Page::writeToDisk() {
     close(fout);
 }
 
-//Read anonymous page
-void MyDB_Page::readFromDisk(string tempFile) {
-    int fin;
-    fin = open(tempFile.data(), O_RDWR | O_CREAT, 0644);
-    lseek(fin, tablePos*pageSize, SEEK_SET);
-    read(fin, pageAdd, pageSize);
-    close(fin);
-}
-
-//Write anonymous page
-void MyDB_Page::writeToDisk(string tempFile) {
-    int fout;
-    fout = open(tempFile.data(), O_SYNC | O_RDWR | O_CREAT, 0644);
-    lseek(fout, tablePos*pageSize, SEEK_SET);
-    write(fout, pageAdd, pageSize);
-    close(fout);
-}
-
 void* MyDB_Page::readPageContent(){
     return pageAdd;
 }
 
 void MyDB_Page::cleanPage(string tempFile) {
     if (dirty) {
-        if (anonymous)
-            writeToDisk(tempFile);
-        else
-            writeToDisk();
+        writeToDisk();
     }
     pinned = false;
     unUsed = true;
@@ -96,7 +80,7 @@ void MyDB_Page::cleanPage(string tempFile) {
     nRef = 0;
 }
 
-void MyDB_Page::reloadData(MyDB_TablePtr tab, size_t pos){
+void MyDB_Page::reloadData(MyDB_TablePtr tab, int pos){
     table = tab;
     tablePos = pos;
     pinned = false;
@@ -105,13 +89,8 @@ void MyDB_Page::reloadData(MyDB_TablePtr tab, size_t pos){
     readFromDisk();
 }
 
-void MyDB_Page::reloadData(){
-    pinned = false;
-    unUsed = false;
-    anonymous = true;
-}
-
-bool MyDB_Page::checkPage(MyDB_TablePtr tab, size_t pos) {
+//Check whether the page saves the corresponding table data
+bool MyDB_Page::checkPage(MyDB_TablePtr tab, int pos) {
     return ((!unUsed)&&(table->getName().compare(tab->getName())==0)&&(tablePos==pos));
 }
 

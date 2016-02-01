@@ -8,8 +8,8 @@
       <sourceFolder url="file://$MODULE_DIR$/Main/BufferMgr/headers/MyDB_PageHandle.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Main/BufferMgr/headers/MyDB_Page.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Main/BufferMgr/headers/MyDB_BufferManager.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Main/BufferMgr/source/MyDB_page.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Main/BufferMgr/source/MyDB_PageHandle.cc" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Main/BufferMgr/source/MyDB_Page.cc" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Main/BufferMgr/source/MyDB_BufferManager.cc" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Main/Catalog/headers/MyDB_Table.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Main/Catalog/source/MyDB_Table.cc" isTestSource="false" />
